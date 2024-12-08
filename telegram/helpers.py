@@ -27,6 +27,7 @@ __all__ = (
     "create_deep_linked_url",
     "effective_message_type",
     "escape_markdown",
+    "is_valid_bot_username",
     "mention_html",
     "mention_markdown",
 )
@@ -143,6 +144,64 @@ def effective_message_type(entity: Union["Message", "Update"]) -> Optional[str]:
     return None
 
 
+def is_valid_bot_username(bot_username: Optional[str]) -> bool:
+    """
+    Checks if a given string is a valid Telegram username.
+
+    This criteria is mostly extracted from https://core.telegram.org/bots/features#botfather, with
+    the exception of the minimum length (which is incorrectly documented at the time of writing as
+    ``5``)
+
+    In plain English: usernames must be between ``4`` to ``32`` characters long, end in ``bot``,
+    and only contain Latin characters, numbers, or underscores.
+
+    Note:
+        Usernames are not case-sensitive: ``JamesTheMockBot`` and ``jamesthemockbot`` refer to the
+        same bot username
+
+        The minimum and maximum character lengths include the required ``bot`` suffix.
+        In other words, the shortest possible bot username is a single letter followed by
+        ``bot``.
+
+        Additionally, @BotFather will not allow the creation of a bot whose username starts
+        with an underscore or number even though the documentation does not state this.
+
+    Examples:
+        * ``is_valid_bot_username(bot.get_me())``
+        * ``is_valid_bot_username("JamesTheMockBot")``
+
+    Args:
+        bot_username (:obj:`str`, optional): The username to validate.
+
+    Returns:
+        :obj:`bool`: ``True`` if the bot username is valid, ``False`` otherwise.
+
+    .. versionadded:: NEXT.VERSION
+    """
+    min_length = MessageLimit.MIN_BOT_USERNAME_LENGTH
+    max_length = MessageLimit.MAX_BOT_USERNAME_LENGTH
+
+    # apart from this nullity check, the remaining checks are in no particular order
+    if bot_username is None:
+        return False
+
+    if not min_length <= len(bot_username) <= max_length:
+        return False
+
+    normalized_username = bot_username.lower()
+    if (
+        not normalized_username.endswith("bot")
+        # as stated above, these are undocumented and discovered by interacting with @BotFather
+        or normalized_username.startswith("_")
+        or normalized_username[:1].isdigit()
+    ):
+        return False
+
+    # technically we can write this function as a single regex check
+    # ...but then it's a bit of a pain to read :)
+    return re.fullmatch(r"[A-Za-z0-9_]*", bot_username) is not None
+
+
 def create_deep_linked_url(
     bot_username: str, payload: Optional[str] = None, group: bool = False
 ) -> str:
@@ -173,12 +232,16 @@ def create_deep_linked_url(
         :obj:`str`: An URL to start the bot with specific parameters.
 
     Raises:
-        :exc:`ValueError`: If the length of the :paramref:`payload` exceeds \
-        :tg-const:`telegram.constants.MessageLimit.DEEP_LINK_LENGTH` characters,
-            contains invalid characters, or if the :paramref:`bot_username` is less than 4
-            characters.
+        :exc:`ValueError`: If the length of the :paramref:`payload` exceeds
+            :tg-const:`telegram.constants.MessageLimit.DEEP_LINK_LENGTH` characters,
+            contains invalid characters, or if the :paramref:`bot_username` is not valid (see
+            :meth:`telegram.helpers.is_valid_bot_username` for validation criteria).
+
+    .. versionchanged:: NEXT.VERSION
+       Previously, this helper did not fully validate the provided bot username beyond checking the
+       username length.
     """
-    if bot_username is None or len(bot_username) <= 3:
+    if not is_valid_bot_username(bot_username):
         raise ValueError("You must provide a valid bot_username.")
 
     base_url = f"https://t.me/{bot_username}"

@@ -1838,6 +1838,21 @@ class MessageLimit(IntEnum):
     """
     DEEP_LINK_LENGTH = 64
     """:obj:`int`: Maximum number of characters for a deep link."""
+    MIN_BOT_USERNAME_LENGTH = 4
+    """:obj:`int`: Minimum number of characters for a bot username in a :obj:`str` passed as the
+    :paramref:`~telegram.helpers.create_deep_linked_url.bot_username` parameter of
+    :meth:`telegram.helpers.create_deep_linked_url`.
+
+    Note:
+        This value is documented as ``5`` in https://core.telegram.org/bots/features#botfather,
+        but Telegram's @BotSupport account has said that the minimum is ``4``: a single character
+        followed by ``bot``.
+    """
+    MAX_BOT_USERNAME_LENGTH = 32
+    """:obj:`int`: Maximum number of characters for a bot username in a :obj:`str` passed as the
+    :paramref:`~telegram.helpers.create_deep_linked_url.bot_username` parameter of
+    :meth:`telegram.helpers.create_deep_linked_url`.
+    """
     # TODO this constant is not used anywhere
     MESSAGE_ENTITIES = 100
     """:obj:`int`: Maximum number of entities that can be displayed in a message. Further entities

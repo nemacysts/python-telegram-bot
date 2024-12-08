@@ -87,7 +87,7 @@ class TestHelpers:
             helpers.mention_markdown(1, "abc", version=-1)
 
     def test_create_deep_linked_url(self):
-        username = "JamesTheMock"
+        username = "JamesTheMockBot"
 
         payload = "hello"
         expected = f"https://t.me/{username}?start={payload}"
@@ -164,3 +164,24 @@ class TestHelpers:
         expected = r"[the\_name](tg://user?id=1)"
 
         assert expected == helpers.mention_markdown(1, "the_name", 2)
+
+    @pytest.mark.parametrize(
+        ("username", "expected"),
+        [
+            # invalid usernames
+            (None, False),
+            ("", False),
+            ("bot", False),
+            ("BOT", False),
+            ("_bot", False),
+            ("ábot", False),
+            ("Ábot", False),
+            ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaabbot", False),
+            # valid usernames
+            ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaabot", True),
+            ("JamesTheMockBot", True),
+            ("jamesthemockbot", True),
+        ],
+    )
+    def test_is_valid_bot_username(self, username, expected):
+        assert helpers.is_valid_bot_username(username) is expected
